@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iTECHLAB | Lab Assignments</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e17;
+    --ink2: #2d2b3d;
+    --muted: #6b6880;
+    --surface: #f7f6f3;
+    --card: #ffffff;
+    --border: #e4e2dc;
+    --accent: #5046e4;
+    --accent-light: #ede9ff;
+    --accent-mid: #a89ef7;
+    --r: 14px;
+    --r-sm: 8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--ink);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 58px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 900; color: white;
+    font-family: 'DM Mono', monospace;
+  }
+  .brand-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
+  #statusMsg {
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    color: #a09dc0;
+    flex: 1;
+    text-align: center;
+  }
+  .sync-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .sync-btn:hover { background: #3d34c4; }
+  .sync-btn.loading { opacity: 0.7; pointer-events: none; }
+
+  /* ── MAIN LAYOUT ── */
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 58px); }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 8px; }
+  .filter-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 0 4px;
+  }
+  .pill-group { display: flex; flex-direction: column; gap: 4px; }
+  .pill-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pill {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .session-row { display: flex; gap: 6px; }
+  .session-pill {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    color: var(--muted);
+  }
+  .session-pill.am.active { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
+  .session-pill.pm.active { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; overflow-x: hidden; }
+
+  /* ── ROOM CARDS ── */
+  .room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .room-card {
+    background: var(--card);
+    border-radius: var(--r);
+    padding: 18px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .room-card:hover { border-color: var(--accent-mid); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(80,70,228,0.1); }
+  .room-card.active-filter { border-color: var(--accent); background: var(--accent-light); }
+  .room-card.empty { opacity: 0.45; pointer-events: none; }
+
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .card-room-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+  }
+  .export-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .export-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .card-tags { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .tag-am { background: #dbeafe; color: #1d4ed8; }
+  .tag-pm { background: #fef3c7; color: #92400e; }
+  .card-topic {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+    margin-bottom: 8px;
+    min-height: 34px;
+  }
+  .card-count { font-size: 0.72rem; font-weight: 600; color: var(--muted); background: var(--surface); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+
+  /* ── SEARCH + TABLE ── */
+  .search-wrap { position: relative; }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 15px; pointer-events: none;
+  }
+  #studentSearch {
+    width: 100%;
+    padding: 11px 16px 11px 40px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--card);
+    font-size: 0.85rem;
+    outline: none;
+  }
+  #studentSearch:focus { border-color: var(--accent); }
+
+  .table-wrapper {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .th {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .table-body { max-height: 460px; overflow-y: auto; }
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    align-items: center;
+  }
+  .cell-name { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; color: var(--ink); }
+  .cell-topic { font-size: 0.78rem; color: var(--ink2); line-height: 1.4; }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 2rem; margin-bottom: 8px; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display: flex; gap: 12px; }
+  .stat-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 10px 16px;
+    flex: 1;
+  }
+  .stat-label { font-size: 0.6rem; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+  .stat-val { font-size: 1.25rem; font-weight: 900; color: var(--ink); font-family: 'DM Mono', monospace; }
+
+  /* ── FILTER CHIP ── */
+  .filter-chip {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-mid);
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .filter-chip.visible { display: flex; }
+  .chip-x { cursor: pointer; margin-left: 2px; }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-name">Teachers Training 2026 ZamPen Cluster </div>
+  </div>
+  <div id="statusMsg">Ready — click Sync to load data</div>
+  <button class="sync-btn" id="syncBtn" onclick="fetchData()">
+    <span id="syncIcon">⟳</span> Sync Live Data
+  </button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="filter-group">
+      <div class="filter-label">Batch</div>
+      <div class="pill-group">
+        <div class="pill-row">
+          <button class="pill active" data-key="batch" data-val="batch3.2" onclick="switchParam(this)">B3.2</button>
+        </div>
+        <div class="pill-row">
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">Day</div>
+      <div class="pill-group">
+        <div class="pill-row">
+          <button class="pill active" data-key="day" data-val="1" onclick="switchParam(this)">Day 1</button>
+          <button class="pill" data-key="day" data-val="2" onclick="switchParam(this)">Day 2</button>
+          <button class="pill" data-key="day" data-val="3" onclick="switchParam(this)">Day 3</button>
+        </div>
+        <div class="pill-row">
+          <button class="pill" data-key="day" data-val="4" onclick="switchParam(this)">Day 4</button>
+          <button class="pill" data-key="day" data-val="5" onclick="switchParam(this)">Day 5</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-label">Session</div>
+      <div class="session-row">
+        <button class="session-pill am active" data-key="session" data-val="AM" onclick="switchParam(this)">☀ AM</button>
+        <button class="session-pill pm" data-key="session" data-val="PM" onclick="switchParam(this)">🌙 PM</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="stats-bar">
+      <div class="stat-chip"><div class="stat-label">Total Participants</div><div class="stat-val" id="statTotal">—</div></div>
+      <div class="stat-chip"><div class="stat-label">This Session</div><div class="stat-val" id="statSession">—</div></div>
+      <div class="stat-chip"><div class="stat-label">Rooms Active</div><div class="stat-val" id="statRooms">—</div></div>
+    </div>
+
+    <div class="room-grid" id="roomGrid">
+      <div class="empty-state" style="grid-column:1/-1"><div class="big">📋</div>Sync data to see room assignments</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="search-wrap" style="flex:1;min-width:180px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="studentSearch" placeholder="Search participant name..." oninput="renderTable()">
+      </div>
+      <div class="filter-chip" id="filterChip">
+        <span id="filterChipLabel">Room filter</span>
+        <span class="chip-x" onclick="clearFilter()">✕</span>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-header">
+        <div class="th">Teacher Name</div>
+        <div class="th">Workshop</div>
+        <div class="th">Laboratory</div>
+      </div>
+      <div class="table-body" id="tableBody">
+        <div class="empty-state"><div class="big">📋</div>Sync data to see assignments</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/** * UPDATED CSV URL FOR BATCH 3.2 */
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSp5cKBgVLQS8OGQA3n2qiCLM3igNoCl10kSpXbL75eLzw5r6ZXDR-g7dbKo_yOhaJ517tECIC3pUg-/pub?output=csv';
+
+const ROOMS = [
+  { id:1, name:"Laboratory 01" },
+  { id:2, name:"Laboratory 02" },
+  { id:3, name:"Laboratory 03" },
+  { id:4, name:"Laboratory 04" },
+];
+
+const SCHEDULE = [
+  // DAY 1 - ROBOTICS
+  { day:"1", session:"AM", preferredRoom:1, id:"D1AM-R1", label:"RoboClass - RoboStarter K", match:["RoboStarter", "Stepping Stone"] },
+  { day:"1", session:"AM", preferredRoom:2, id:"D1AM-R2", label:"RoboClass - RoboJuno 1", match:["RoboJuno 1", "CyberPi", "Console"] },
+  { day:"1", session:"PM", preferredRoom:1, id:"D1PM-R1", label:"RoboClass - RoboPrime 1", match:["RoboPrime 1", "CodeyRocky", "Mobile App"] },
+  { day:"1", session:"PM", preferredRoom:2, id:"D1PM-R2", label:"RoboClass - RoboJuno 2", match:["RoboJuno 2", "mBot2"] },
+
+  // DAY 2 - ROBOTICS
+  { day:"2", session:"AM", preferredRoom:1, id:"D2AM-R1", label:"RoboClass - RoboPrime 2-3", match:["RoboPrime 2 -3", "CodeyRocky"] },
+  { day:"2", session:"AM", preferredRoom:2, id:"D2AM-R2", label:"Arduino 1 - Starting with Arduino", match:["Arduino 1", "Starting with Arduino"] },
+  { day:"2", session:"PM", preferredRoom:1, id:"D2PM-R1", label:"RoboClass - RoboPrime 4-5", match:["RoboPrime 4-5", "MicroBit", "Companion"] },
+  { day:"2", session:"PM", preferredRoom:2, id:"D2PM-R2", label:"Arduino 2 - Exploring Arduino", match:["Arduino 2", "Exploring Arduino"] },
+
+  // DAY 3 - ICT
+  { day:"3", session:"AM", preferredRoom:1, id:"D3AM-R1", label:"CompuThinkers K & 1: ICT Essentials", match:["CompuThinkers K", "CompuThinkers 1", "ICT Essentials", "Computer Fundamentals"] },
+  { day:"3", session:"AM", preferredRoom:2, id:"D3AM-R2", label:"Productivity Tools: Word & Publishing", match:["Productivity Tools", "Word", "Desktop Publishing"] },
+  { day:"3", session:"PM", preferredRoom:1, id:"D3PM-R1", label:"CompuThinkers 2: Scratch Jr", match:["CompuThinkers 2", "Scratch Jr"] },
+  { day:"3", session:"PM", preferredRoom:2, id:"D3PM-R2", label:"Web Design Basics: HTML & CSS", match:["Web Design Basics", "HTML and CSS"] },
+
+  // DAY 4 - ICT
+  { day:"4", session:"AM", preferredRoom:1, id:"D4AM-R1", label:"CompuThinkers 3: PowerPoint", match:["CompuThinkers 3", "PowerPoint"] },
+  { day:"4", session:"AM", preferredRoom:2, id:"D4AM-R2", label:"Python Coding Essentials", match:["Python Coding Essentials", "Code with Python"] },
+  { day:"4", session:"PM", preferredRoom:1, id:"D4PM-R1", label:"CompuThinkers 4: HTML Basics", match:["CompuThinkers 4", "HTML Basics"] },
+  { day:"4", session:"PM", preferredRoom:2, id:"D4PM-R2", label:"Java Programming Fundamentals", match:["Java Programming Fundamentals", "Intro to Programming with Java"] },
+
+  // DAY 5 - ICT
+  { day:"5", session:"AM", preferredRoom:1, id:"D5AM-R1", label:"CompuThinkers 5-6: Multimedia", match:["CompuThinkers 5 - 6", "Multimedia Creation"] },
+  { day:"5", session:"AM", preferredRoom:2, id:"D5AM-R2", label:"E-Commerce: Digital Age Business", match:["E-Commerce", "Market Your Product Online"] },
+  { day:"5", session:"PM", preferredRoom:1, id:"D5PM-R1", label:"Scratch Fun with mBlock", match:["Scratch Fun", "mBlock", "Game Features"] },
+  { day:"5", session:"PM", preferredRoom:2, id:"D5PM-R2", label:"Empowerment Technologies", match:["Empowerment Technologies", "Media and Technology"] },
+];
+
+let params = { batch:'batch3.2', day:'1', session:'AM' };
+let allParticipants = [];
+let filteredRows = [];
+let activeSlotId = null;
+
+function parseWorkshops(raw) {
+  return raw
+    .split(/,\s*(?=[A-Z]|Robo|Arduino|Java|Python|Scratch|Web|Productivity|CompuThinkers|mBot|E-Commerce|Empowerment)/)
+    .map(w => w.trim()).filter(w => w.length > 0);
+}
+
+function resolveSlot(workshopTitle, slots) {
+  const lower = workshopTitle.toLowerCase();
+  return slots.find(s => s.match.some(kw => lower.includes(kw.toLowerCase()))) || null;
+}
+
+function exportToCSV(slotId, topicLabel) {
+  const dataToExport = filteredRows.filter(r => r.slotId === slotId);
+  if (dataToExport.length === 0) return alert("No data to export.");
+
+  let csvContent = "Teacher Name,Workshop,Laboratory\n";
+  dataToExport.forEach(r => {
+    const safeName = r.name.replace(/"/g, '""');
+    csvContent += `"${safeName}","${r.topic}","Lab 0${r.roomId}"\n`;
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const fileName = `${params.batch}_Day${params.day}_${params.session}_${topicLabel.substring(0, 15)}`.replace(/\s+/g, '_');
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${fileName}.csv`);
+  link.click();
+}
+
+async function fetchData() {
+  const status = document.getElementById('statusMsg');
+  const btn = document.getElementById('syncBtn');
+  status.textContent = '⏳ Syncing Batch 3.2 Data...';
+  btn.classList.add('loading');
+  try {
+    const res = await fetch(CSV_URL + '&t=' + Date.now());
+    const csv = await res.text();
+    const lines = csv.split(/\r?\n/).filter(l => l.trim());
+    allParticipants = lines.slice(1).map(line => {
+      // Improved CSV parsing for quoted commas
+      const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      return {
+        name: (cols[4] || '').replace(/"/g, '').trim(),
+        batch: (cols[13] || '').toLowerCase().replace(/\s/g, ''),
+        workshops: parseWorkshops((cols[14] || '').replace(/^"|"$/g, '').trim())
+      };
+    }).filter(p => p.name.length > 0);
+    status.textContent = `✅ ${allParticipants.length} records loaded`;
+    processAssignments();
+  } catch(e) {
+    status.textContent = '❌ Sync failed';
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function processAssignments() {
+  const slots = SCHEDULE.filter(s => s.day === params.day && s.session === params.session);
+  const counts = {};
+  slots.forEach(s => counts[s.id] = 0);
+  
+  const rows = [];
+
+  allParticipants.forEach(p => {
+    if (p.batch !== params.batch) return;
+    
+    p.workshops.forEach(ws => {
+      const slot = resolveSlot(ws, slots);
+      if (!slot) return;
+      
+      counts[slot.id]++;
+      rows.push({ 
+        name: p.name, 
+        topic: slot.label, 
+        slotId: slot.id, 
+        roomId: slot.preferredRoom 
+      });
+    });
+  });
+
+  filteredRows = rows;
+
+  document.getElementById('statTotal').textContent = allParticipants.length;
+  document.getElementById('statSession').textContent = filteredRows.length;
+  document.getElementById('statRooms').textContent = slots.length;
+
+  const grid = document.getElementById('roomGrid');
+  if (slots.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="big">📋</div>No sessions scheduled.</div>';
+  } else {
+    const sessionTag = params.session === 'AM' ? 'tag-am' : 'tag-pm';
+    grid.innerHTML = slots.map(slot => {
+      const room = ROOMS.find(r => r.id === slot.preferredRoom);
+      const cnt = counts[slot.id] || 0;
+      const isActive = activeSlotId === slot.id;
+      return `
+      <div class="room-card ${isActive ? 'active-filter' : ''} ${cnt === 0 ? 'empty' : ''}"
+            onclick="toggleFilter('${slot.id}', '${slot.label.replace(/'/g,"\\")}')">
+        <div class="card-header">
+          <div class="card-room-label">${room ? room.name : 'Unknown Lab'}</div>
+          ${cnt > 0 ? `<button class="export-btn" onclick="event.stopPropagation(); exportToCSV('${slot.id}', '${slot.label.replace(/'/g,"\\")}')">📥 CSV</button>` : ''}
+        </div>
+        <div class="card-tags">
+          <span class="tag ${sessionTag}">${params.session}</span>
+        </div>
+        <div class="card-topic">${slot.label}</div>
+        <div class="card-count">${cnt} Teachers assigned</div>
+      </div>`;
+    }).join('');
+  }
+  renderTable();
+}
+
+function toggleFilter(slotId, label) {
+  if (activeSlotId === slotId) {
+    activeSlotId = null;
+    document.getElementById('filterChip').classList.remove('visible');
+  } else {
+    activeSlotId = slotId;
+    document.getElementById('filterChipLabel').textContent = label;
+    document.getElementById('filterChip').classList.add('visible');
+  }
+  processAssignments();
+}
+
+function clearFilter() {
+  activeSlotId = null;
+  document.getElementById('filterChip').classList.remove('visible');
+  processAssignments();
+}
+
+function renderTable() {
+  const query = document.getElementById('studentSearch').value.toLowerCase().trim();
+  let view = filteredRows;
+  if (activeSlotId) view = view.filter(r => r.slotId === activeSlotId);
+  if (query) view = view.filter(r => r.name.toLowerCase().includes(query));
+
+  const body = document.getElementById('tableBody');
+  if (view.length === 0) {
+    body.innerHTML = `<div class="empty-state">No results found</div>`;
+    return;
+  }
+  body.innerHTML = view.map(r => `
+    <div class="table-row">
+      <div class="cell-name">${r.name}</div>
+      <div class="cell-topic">${r.topic}</div>
+      <div class="cell-room"><span class="badge">Lab 0${r.roomId}</span></div>
+    </div>`).join('');
+}
+
+function switchParam(btn) {
+  const key = btn.dataset.key;
+  const val = btn.dataset.val;
+  params[key] = val;
+  const group = key === 'session' ? '.session-pill' : '.pill';
+  btn.closest(key === 'session' ? '.session-row' : '.pill-group').querySelectorAll(group).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeSlotId = null;
+  document.getElementById('filterChip').classList.remove('visible');
+  if (allParticipants.length > 0) processAssignments();
+}
+</script>
+</body>
+</html>
